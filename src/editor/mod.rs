@@ -1,8 +1,11 @@
+use core::cmp::min;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
-use core::cmp::min;
 mod terminal;
 use terminal::{Position, Size, Terminal};
+
+use self::document::Document;
+mod document;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -39,8 +42,8 @@ impl Editor {
         Ok(())
     }
     fn move_point(&mut self, key_code: KeyCode) -> Result<(), Error> {
-        let Location { mut x, mut y} = self.location;
-        let Size { height, width} = Terminal::size()?;
+        let Location { mut x, mut y } = self.location;
+        let Size { height, width } = Terminal::size()?;
         match key_code {
             KeyCode::Up => {
                 y = y.saturating_sub(1);
@@ -68,7 +71,7 @@ impl Editor {
             }
             _ => (),
         }
-        self.location = Location {x, y};
+        self.location = Location { x, y };
         Ok(())
     }
     fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
@@ -85,7 +88,7 @@ impl Editor {
                 | KeyCode::Left
                 | KeyCode::Right
                 | KeyCode::PageDown
-                | KeyCode::PageUp 
+                | KeyCode::PageUp
                 | KeyCode::End
                 | KeyCode::Home => {
                     self.move_point(*code)?;
@@ -134,7 +137,11 @@ impl Editor {
     }
     fn draw_rows() -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
-        for current_row in 0..height {
+        if height > 0 {
+            Terminal::clear_line()?;
+            Document::render()?;
+        }
+        for current_row in 1..height {
             Terminal::clear_line()?;
             // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
             // it's allowed to be a bit up or down
