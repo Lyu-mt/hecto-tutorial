@@ -1,6 +1,5 @@
+use super::View;
 use std::io::Error;
-
-use crate::editor::Terminal;
 
 pub struct Line {
     string: String,
@@ -12,9 +11,9 @@ impl Line {
             string: String::from(str),
         }
     }
-    pub fn render(&self) -> Result<(), Error> {
-        Terminal::print(&self.string)?;
-        Terminal::print("\r\n")?;
+    pub fn render_into<T: View>(&self, view: &T) -> Result<(), Error> {
+        view.render(&self.string)?;
+        view.render("\r\n")?;
         Ok(())
     }
 }

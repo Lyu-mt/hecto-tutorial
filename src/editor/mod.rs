@@ -3,13 +3,17 @@ use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers}
 use std::env;
 use std::io::Error;
 mod terminal;
-use terminal::{Position, Size, Terminal};
+use terminal::{Position, Size, Terminal, TerminalView};
 
 use self::document::Document;
 mod document;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub trait View {
+    fn render(&self, str: &str) -> Result<(), Error>;
+}
 
 #[derive(Copy, Clone, Default)]
 struct Location {
@@ -139,7 +143,7 @@ impl Editor {
         let spaces = " ".repeat(padding.saturating_sub(1));
         welcome_message = format!("~{spaces}{welcome_message}");
         welcome_message.truncate(width);
-        Terminal::print(welcome_message)?;
+        Terminal::print(&welcome_message)?;
         Ok(())
     }
     fn draw_empty_row() -> Result<(), Error> {
@@ -164,7 +168,7 @@ impl Editor {
                 }
             }
         } else {
-            self.document.render()?;
+            self.document.render_into(&TerminalView)?;
         }
         Ok(())
     }

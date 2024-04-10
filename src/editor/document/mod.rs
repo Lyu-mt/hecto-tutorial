@@ -4,6 +4,7 @@ use std::fs;
 use std::io::Error;
 
 use super::terminal::{Size, Terminal};
+use super::View;
 
 #[derive(Default)]
 pub struct Document {
@@ -22,11 +23,11 @@ impl Document {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
-    pub fn render(&self) -> Result<(), Error> {
+    pub fn render_into<T: View>(&self, view: &T) -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
         for row in 0..height {
             if let Some(line) = self.lines.get(row) {
-                line.render()?;
+                line.render_into(view)?;
             }
         }
         Ok(())

@@ -1,9 +1,14 @@
-use core::fmt::Display;
+mod terminalview;
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::style::Print;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType};
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
+
+// clippy::module_name_repetitions: We need to be able to differentiate between the trait View, and the Terminal's instance of a view, hence the prefix.
+#[allow(clippy::module_name_repetitions)]
+#[derive(Default)]
+pub struct TerminalView;
 
 #[derive(Copy, Clone)]
 pub struct Size {
@@ -15,6 +20,7 @@ pub struct Position {
     pub col: usize,
     pub row: usize,
 }
+
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
 /// Regardless of the actual size of the Terminal, this representation
@@ -60,23 +66,9 @@ impl Terminal {
         Self::queue_command(Show)?;
         Ok(())
     }
-    pub fn print<T: Display>(string: T) -> Result<(), Error> {
-        Self::queue_command(Print(string))?;
+    pub fn print(str: &str) -> Result<(), Error> {
+        Self::queue_command(Print(str))?;
         Ok(())
-    }
-
-    /// Returns the current size of this Terminal.
-    /// Edge Case for systems with `usize` < `u16`:
-    /// * A `Size` representing the terminal size. Any coordinate `z` truncated to `usize` if `usize` < `z` < `u16`
-    pub fn size() -> Result<Size, Error> {
-        let (width_u16, height_u16) = size()?;
-        // clippy::as_conversions: See doc above
-        #[allow(clippy::as_conversions)]
-        let height = height_u16 as usize;
-        // clippy::as_conversions: See doc above
-        #[allow(clippy::as_conversions)]
-        let width = width_u16 as usize;
-        Ok(Size { height, width })
     }
     pub fn execute() -> Result<(), Error> {
         stdout().flush()?;
@@ -86,5 +78,18 @@ impl Terminal {
     fn queue_command<T: Command>(command: T) -> Result<(), Error> {
         queue!(stdout(), command)?;
         Ok(())
+    }
+    /// Returns the current size of this Terminal.
+    /// Edge Case for systems with `usize` < `u16`:
+    /// * A `Size` representing the terminal size. Any coordinate `z` truncated to `usize` if `usize` < `z` < `u16`
+    pub fn size() -> Result<Size, Error> {
+        let (width_u16, height_u16) = size()?;
+        // clippy::as_conversions: See doc for Terminal above
+        #[allow(clippy::as_conversions)]
+        let height = height_u16 as usize;
+        // clippy::as_conversions: See doc for Terminal above
+        #[allow(clippy::as_conversions)]
+        let width = width_u16 as usize;
+        Ok(Size { height, width })
     }
 }
