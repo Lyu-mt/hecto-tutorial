@@ -1,5 +1,6 @@
 use core::cmp::min;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers};
+use std::env;
 use std::io::Error;
 mod terminal;
 use terminal::{Position, Size, Terminal};
@@ -20,14 +21,24 @@ struct Location {
 pub struct Editor {
     should_quit: bool,
     location: Location,
+    document: Document,
 }
 
 impl Editor {
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
+        self.load_doc_from_args();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
+    }
+    fn load_doc_from_args(&mut self) {
+        let args: Vec<String> = env::args().collect();
+        if let Some(file_name) = args.get(1) {
+            if let Ok(loaded_doc) = Document::open(file_name) {
+                self.document = loaded_doc;
+            }
+        }
     }
 
     fn repl(&mut self) -> Result<(), Error> {
@@ -105,7 +116,7 @@ impl Editor {
             Terminal::clear_screen()?;
             Terminal::print("Goodbye.\r\n")?;
         } else {
-            Self::draw_rows()?;
+            self.draw_rows()?;
             Terminal::move_caret_to(Position {
                 col: self.location.x,
                 row: self.location.y,
@@ -135,25 +146,25 @@ impl Editor {
         Terminal::print("~")?;
         Ok(())
     }
-    fn draw_rows() -> Result<(), Error> {
+    fn draw_rows(&self) -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
-        if height > 0 {
-            Terminal::clear_line()?;
-            Document::render()?;
-        }
-        for current_row in 1..height {
-            Terminal::clear_line()?;
-            // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
-            // it's allowed to be a bit up or down
-            #[allow(clippy::integer_division)]
-            if current_row == height / 3 {
-                Self::draw_welcome_message()?;
-            } else {
-                Self::draw_empty_row()?;
+        if self.document.is_empty() {
+            for current_row in 0..height {
+                Terminal::clear_line()?;
+                // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
+                // it's allowed to be a bit up or down
+                #[allow(clippy::integer_division)]
+                if current_row == height / 3 {
+                    Self::draw_welcome_message()?;
+                } else {
+                    Self::draw_empty_row()?;
+                }
+                if current_row.saturating_add(1) < height {
+                    Terminal::print("\r\n")?;
+                }
             }
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
-            }
+        } else {
+            self.document.render()?;
         }
         Ok(())
     }
