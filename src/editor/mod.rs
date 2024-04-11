@@ -3,22 +3,33 @@ use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers}
 use std::env;
 use std::io::Error;
 mod terminal;
-use terminal::{Position, Size, Terminal, TerminalView};
+use terminal::{Position, Terminal, TerminalView};
 
 use self::document::Document;
 mod document;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub trait View {
-    fn render(&self, str: &str) -> Result<(), Error>;
+#[derive(Copy, Clone, Default)]
+pub struct Coordinate {
+    x: usize,
+    y: usize,
 }
 
 #[derive(Copy, Clone, Default)]
-struct Location {
-    x: usize,
-    y: usize,
+pub struct Size {
+    pub height: usize,
+    pub width: usize,
+}
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub enum RenderingError {
+    IO(Error),
+}
+pub trait View {
+    fn size(&self) -> Size;
+    fn render_str(&self, str: &str, origin: Coordinate) -> Result<(), RenderingError>;
 }
 
 #[derive(Default)]
@@ -27,6 +38,8 @@ pub struct Editor {
     location: Location,
     document: Document,
 }
+
+type Location = Coordinate;
 
 impl Editor {
     pub fn run(&mut self) {
@@ -122,8 +135,8 @@ impl Editor {
         } else {
             self.draw_rows()?;
             Terminal::move_caret_to(Position {
-                col: self.location.x,
-                row: self.location.y,
+                x: self.location.x,
+                y: self.location.y,
             })?;
         }
 
@@ -167,8 +180,8 @@ impl Editor {
                     Terminal::print("\r\n")?;
                 }
             }
-        } else {
-            self.document.render_into(&TerminalView)?;
+        } else if let Err(RenderingError::IO(err)) = self.document.render_into(&TerminalView) {
+            return Err(err);
         }
         Ok(())
     }

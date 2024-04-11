@@ -1,5 +1,5 @@
+use crate::editor::{Coordinate, RenderingError};
 use super::View;
-use std::io::Error;
 
 pub struct Line {
     string: String,
@@ -11,9 +11,9 @@ impl Line {
             string: String::from(str),
         }
     }
-    pub fn render_into<T: View>(&self, view: &T) -> Result<(), Error> {
-        view.render(&self.string)?;
-        view.render("\r\n")?;
+    pub fn render_into<T: View>(&self, view: &T) -> Result<(), RenderingError> {
+        view.render_str(&self.string, Coordinate::default())?;
+        view.render_str("\r\n", Coordinate::default())?;
         Ok(())
     }
 }

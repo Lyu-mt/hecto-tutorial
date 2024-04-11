@@ -5,21 +5,14 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearT
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
 
+use super::{Coordinate, Size};
+
 // clippy::module_name_repetitions: We need to be able to differentiate between the trait View, and the Terminal's instance of a view, hence the prefix.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct TerminalView;
 
-#[derive(Copy, Clone)]
-pub struct Size {
-    pub height: usize,
-    pub width: usize,
-}
-#[derive(Copy, Clone, Default)]
-pub struct Position {
-    pub col: usize,
-    pub row: usize,
-}
+pub type Position = Coordinate;
 
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
@@ -55,7 +48,7 @@ impl Terminal {
     pub fn move_caret_to(position: Position) -> Result<(), Error> {
         // clippy::as_conversions: See doc above
         #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
-        Self::queue_command(MoveTo(position.col as u16, position.row as u16))?;
+        Self::queue_command(MoveTo(position.x as u16, position.y as u16))?;
         Ok(())
     }
     pub fn hide_caret() -> Result<(), Error> {

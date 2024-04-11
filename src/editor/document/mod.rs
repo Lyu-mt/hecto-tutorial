@@ -1,10 +1,8 @@
 mod line;
+use super::{RenderingError, Size, View};
 use line::Line;
 use std::fs;
 use std::io::Error;
-
-use super::terminal::{Size, Terminal};
-use super::View;
 
 #[derive(Default)]
 pub struct Document {
@@ -23,8 +21,8 @@ impl Document {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
-    pub fn render_into<T: View>(&self, view: &T) -> Result<(), Error> {
-        let Size { height, .. } = Terminal::size()?;
+    pub fn render_into<T: View>(&self, view: &T) -> Result<(), RenderingError> {
+        let Size { height, .. } = view.size();
         for row in 0..height {
             if let Some(line) = self.lines.get(row) {
                 line.render_into(view)?;
