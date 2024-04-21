@@ -1,7 +1,7 @@
 use core::cmp::min;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers};
-use std::env;
 use std::io::Error;
+use std::{env, panic};
 mod terminal;
 use terminal::{Position, Terminal, TerminalView};
 
@@ -50,11 +50,14 @@ type Location = Coordinate;
 
 impl Editor {
     pub fn run(&mut self) {
+        let current_hook = panic::take_hook();
+        panic::set_hook(Box::new(move |panic_info| {
+            let _ = Terminal::terminate();
+            current_hook(panic_info);
+        }));
         Terminal::initialize().unwrap();
         self.load_doc_from_args();
-        let result = self.repl();
-        Terminal::terminate().unwrap();
-        result.unwrap();
+        self.repl().unwrap();
     }
     fn load_doc_from_args(&mut self) {
         let args: Vec<String> = env::args().collect();
@@ -136,17 +139,12 @@ impl Editor {
     fn refresh_screen(&self) -> Result<(), Error> {
         Terminal::hide_caret()?;
         Terminal::move_caret_to(Position::default())?;
-        if self.should_quit {
-            Terminal::clear_screen()?;
-            Terminal::print("Goodbye.\r\n")?;
-        } else {
-            self.draw_rows()?;
-            Terminal::move_caret_to(Position {
-                x: self.location.x,
-                y: self.location.y,
-            })?;
-        }
 
+        self.draw_rows()?;
+        Terminal::move_caret_to(Position {
+            x: self.location.x,
+            y: self.location.y,
+        })?;
         Terminal::show_caret()?;
         Terminal::execute()?;
         Ok(())
@@ -194,5 +192,13 @@ impl Editor {
             }
         }
         Ok(())
+    }
+}
+impl Drop for Editor {
+    fn drop(&mut self) {
+        let _ = Terminal::terminate();
+        if self.should_quit {
+            let _ = Terminal::print("Goodbye.\r\n");
+        }
     }
 }
