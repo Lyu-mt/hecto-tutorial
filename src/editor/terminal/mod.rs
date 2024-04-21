@@ -6,12 +6,9 @@ use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
 
 use super::{Coordinate, Size};
-
 // clippy::module_name_repetitions: We need to be able to differentiate between the trait View, and the Terminal's instance of a view, hence the prefix.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Default)]
-pub struct TerminalView;
-
+pub use terminalview::TerminalView;
 pub type Position = Coordinate;
 
 /// Represents the Terminal.
@@ -40,6 +37,10 @@ impl Terminal {
     }
     pub fn clear_line() -> Result<(), Error> {
         Self::queue_command(Clear(ClearType::CurrentLine))?;
+        Ok(())
+    }
+    pub fn clear_from_cursor_up()-> Result<(), Error> {
+        Self::queue_command(Clear(ClearType::FromCursorUp))?;
         Ok(())
     }
     /// Moves the caret to the given Position.

@@ -1,5 +1,5 @@
 mod line;
-use super::{RenderingError, Size, View};
+use super::{Coordinate, RenderingError, Size, View};
 use line::Line;
 use std::fs;
 use std::io::Error;
@@ -25,7 +25,7 @@ impl Document {
         let Size { height, .. } = view.size();
         for row in 0..height {
             if let Some(line) = self.lines.get(row) {
-                line.render_into(view)?;
+                line.render_into(view, Coordinate { x: 0, y: row })?;
             }
         }
         Ok(())

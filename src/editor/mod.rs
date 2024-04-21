@@ -27,6 +27,13 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub enum RenderingError {
     IO(Error),
 }
+
+impl From<Error> for RenderingError {
+    fn from(error: Error) -> Self {
+        Self::IO(error)
+    }
+}
+
 pub trait View {
     fn size(&self) -> Size;
     fn render_str(&self, str: &str, origin: Coordinate) -> Result<(), RenderingError>;
@@ -180,8 +187,11 @@ impl Editor {
                     Terminal::print("\r\n")?;
                 }
             }
-        } else if let Err(RenderingError::IO(err)) = self.document.render_into(&TerminalView) {
-            return Err(err);
+        } else {
+            let terminal_view = TerminalView::from(Terminal::size().unwrap_or_default())?;
+            if let Err(RenderingError::IO(err)) = self.document.render_into(&terminal_view) {
+                return Err(err);
+            }
         }
         Ok(())
     }
