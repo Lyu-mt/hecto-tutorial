@@ -1,7 +1,6 @@
 use core::cmp::min;
 
-use super::View;
-use crate::editor::{Coordinate, RenderingError};
+use crate::editor::{View, Coordinate, RenderingError};
 
 pub struct Line {
     string: String,

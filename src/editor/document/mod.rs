@@ -1,12 +1,14 @@
-mod line;
-use super::{Coordinate, RenderingError, Size, View};
-use line::Line;
+use crate::editor::{Coordinate, Direction, Location, RenderingError, Size, View};
 use std::fs;
 use std::io::Error;
+
+mod line;
+use line::Line;
 
 #[derive(Default)]
 pub struct Document {
     lines: Vec<Line>,
+    point_location: Location,
 }
 
 impl Document {
@@ -16,7 +18,35 @@ impl Document {
         for value in contents.lines() {
             lines.push(Line::from(value));
         }
-        Ok(Self { lines })
+        Ok(Self {
+            lines,
+            point_location: Location::default(),
+        })
+    }
+    pub fn move_point(&mut self, direction: Direction) {
+        match direction {
+            Direction::Up(step) => {
+                self.point_location.y = self.point_location.y.saturating_sub(step);
+            }
+            Direction::Down(step) => {
+                self.point_location.y = self.point_location.y.saturating_add(step);
+            }
+            Direction::Left(step) => {
+                self.point_location.x = self.point_location.x.saturating_sub(step);
+            }
+            Direction::Right(step) => {
+                self.point_location.x = self.point_location.x.saturating_add(step);
+            }
+            Direction::StartOfLine => {
+                self.point_location.x = 0;
+            }
+            Direction::EndOfLine => {
+                self.point_location.x = self.point_location.x.saturating_add(5);
+            }
+        };
+    }
+    pub const fn point_location(&self) -> Location {
+        self.point_location
     }
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()

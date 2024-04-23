@@ -1,55 +1,22 @@
-use core::cmp::min;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
 use std::{env, panic};
+
 mod terminal;
 use terminal::{Position, Terminal, TerminalView};
 
-use self::document::Document;
 mod document;
+use document::Document;
+
+mod prelude;
+pub use prelude::*;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 
-#[derive(Copy, Clone, Default)]
-pub struct Coordinate {
-    x: usize,
-    y: usize,
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct Size {
-    pub height: usize,
-    pub width: usize,
-}
-
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-pub enum RenderingError {
-    IO(Error),
-}
-
-impl From<Error> for RenderingError {
-    fn from(error: Error) -> Self {
-        Self::IO(error)
-    }
-}
-impl From<RenderingError> for Error {
-    fn from(rendering_error: RenderingError) -> Self {
-        match rendering_error {
-            RenderingError::IO(io_error) => io_error,
-        }
-    }
-}
-
-pub trait View {
-    fn size(&self) -> Size;
-    fn render_str(&self, str: &str, origin: Coordinate) -> Result<(), RenderingError>;
-}
-
 #[derive(Default)]
 pub struct Editor {
     should_quit: bool,
-    location: Location,
     document: Document,
 }
 
@@ -87,36 +54,18 @@ impl Editor {
         Ok(())
     }
     fn move_point(&mut self, key_code: KeyCode) {
-        let Location { mut x, mut y } = self.location;
-        let Size { height, width } = Terminal::size().unwrap_or_default();
+        let Size { height, .. } = Terminal::size().unwrap_or_default();
         match key_code {
-            KeyCode::Up => {
-                y = y.saturating_sub(1);
-            }
-            KeyCode::Down => {
-                y = min(height.saturating_sub(1), y.saturating_add(1));
-            }
-            KeyCode::Left => {
-                x = x.saturating_sub(1);
-            }
-            KeyCode::Right => {
-                x = min(width.saturating_sub(1), x.saturating_add(1));
-            }
-            KeyCode::PageUp => {
-                y = 0;
-            }
-            KeyCode::PageDown => {
-                y = height.saturating_sub(1);
-            }
-            KeyCode::Home => {
-                x = 0;
-            }
-            KeyCode::End => {
-                x = width.saturating_sub(1);
-            }
+            KeyCode::Up => self.document.move_point(Direction::Up(1)),
+            KeyCode::Down => self.document.move_point(Direction::Down(1)),
+            KeyCode::Left => self.document.move_point(Direction::Left(1)),
+            KeyCode::Right => self.document.move_point(Direction::Right(1)),
+            KeyCode::PageUp => self.document.move_point(Direction::Up(height)),
+            KeyCode::PageDown => self.document.move_point(Direction::Down(height)),
+            KeyCode::Home => self.document.move_point(Direction::StartOfLine),
+            KeyCode::End => self.document.move_point(Direction::EndOfLine),
             _ => (),
         }
-        self.location = Location { x, y };
     }
     fn evaluate_event(&mut self, event: &Event) {
         if let Key(KeyEvent {
@@ -150,9 +99,10 @@ impl Editor {
         Terminal::move_caret_to(Position::default())?;
 
         self.draw_rows()?;
+        let point = self.document.point_location();
         Terminal::move_caret_to(Position {
-            x: self.location.x,
-            y: self.location.y,
+            x: point.x,
+            y: point.y,
         })?;
         let _ = Terminal::show_caret();
         let _ = Terminal::execute();

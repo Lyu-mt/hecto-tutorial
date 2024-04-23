@@ -1,7 +1,6 @@
 use std::io::Error;
-
-use super::{Position, Terminal};
-use crate::editor::{Coordinate, RenderingError, Size, View};
+use super::Terminal;
+use crate::editor::{Coordinate, Position, RenderingError, Size, View};
 // clippy::module_name_repetitions: We need to be able to differentiate between the trait View, and the Terminal's instance of a view, hence the prefix.
 #[allow(clippy::module_name_repetitions)]
 pub struct TerminalView {
