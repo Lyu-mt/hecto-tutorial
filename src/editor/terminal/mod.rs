@@ -49,12 +49,8 @@ impl Terminal {
         Self::queue_command(Clear(ClearType::All))?;
         Ok(())
     }
-    pub fn clear_line() -> Result<(), Error> {
-        Self::queue_command(Clear(ClearType::CurrentLine))?;
-        Ok(())
-    }
-    pub fn clear_from_cursor_up() -> Result<(), Error> {
-        Self::queue_command(Clear(ClearType::FromCursorUp))?;
+    pub fn clear_until_newline() -> Result<(), Error> {
+        Self::queue_command(Clear(ClearType::UntilNewLine))?;
         Ok(())
     }
     /// Moves the caret to the given Position.
