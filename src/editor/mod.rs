@@ -1,3 +1,4 @@
+use crossterm::event::KeyEventKind;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
 use std::{env, panic};
@@ -63,8 +64,12 @@ impl Editor {
             KeyCode::Down => self.document.move_point(Direction::Down(1)),
             KeyCode::Left => self.document.move_point(Direction::Left),
             KeyCode::Right => self.document.move_point(Direction::Right),
-            KeyCode::PageUp => self.document.move_point(Direction::Up(height.saturating_sub(1))),
-            KeyCode::PageDown => self.document.move_point(Direction::Down(height.saturating_sub(1))),
+            KeyCode::PageUp => self
+                .document
+                .move_point(Direction::Up(height.saturating_sub(1))),
+            KeyCode::PageDown => self
+                .document
+                .move_point(Direction::Down(height.saturating_sub(1))),
             KeyCode::Home => self.document.move_point(Direction::StartOfLine),
             KeyCode::End => self.document.move_point(Direction::EndOfLine),
             _ => (),
@@ -72,7 +77,10 @@ impl Editor {
     }
     fn evaluate_event(&mut self, event: &Event) {
         if let Key(KeyEvent {
-            code, modifiers, ..
+            code,
+            modifiers,
+            kind: KeyEventKind::Press,
+            ..
         }) = event
         {
             match code {
