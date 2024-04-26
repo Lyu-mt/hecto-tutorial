@@ -23,6 +23,9 @@ impl Line {
         }
         Self { string }
     }
+    pub fn len(&self) -> usize {
+        self.string.len()
+    }
     pub fn render_into<T: View>(
         &self,
         view: &T,

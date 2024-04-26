@@ -3,8 +3,8 @@ use std::io::Error;
 pub enum Direction {
     Up(usize),
     Down(usize),
-    Left(usize),
-    Right(usize),
+    Left,
+    Right,
     StartOfLine,
     EndOfLine,
 }
