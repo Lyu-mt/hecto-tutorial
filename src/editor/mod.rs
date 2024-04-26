@@ -14,13 +14,15 @@ pub use prelude::*;
 const NAME: &str = env!("CARGO_PKG_NAME");
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+type Location = Coordinate;
+
 #[derive(Default)]
 pub struct Editor {
     should_quit: bool,
     document: Document,
+    scroll_offset: Location,
+    terminal_view: TerminalView,
 }
-
-type Location = Coordinate;
 
 impl Editor {
     pub fn run(&mut self) {
@@ -31,6 +33,7 @@ impl Editor {
         }));
         Terminal::initialize().unwrap();
         self.load_doc_from_args();
+
         self.repl().unwrap();
     }
     fn load_doc_from_args(&mut self) {
@@ -89,6 +92,26 @@ impl Editor {
                 _ => (),
             }
         }
+        self.scroll_document();
+    }
+    /// Scrolls the document to bring the current location into view, but at most to the bounds of the Terminal (0..usize)
+    fn scroll_document(&mut self) {
+        let Location { x, y } = self.document.point_location();
+        let Size { width, height } = self.terminal_view.size();
+
+        // Scroll vertically
+        if y < self.scroll_offset.y {
+            self.scroll_offset.y = y;
+        } else if y >= self.scroll_offset.y.saturating_add(height) {
+            self.scroll_offset.y = y.saturating_sub(height).saturating_add(1);
+        }
+
+        //Scroll horizontally
+        if x < self.scroll_offset.x {
+            self.scroll_offset.x = x;
+        } else if x >= self.scroll_offset.x.saturating_add(width) {
+            self.scroll_offset.x = x.saturating_sub(width).saturating_add(1);
+        }
     }
     /// Refreshs the screen by hiding the caret, moving it to the top left and drawing the new screen.
     /// Errors regarding showing/hiding the caret are silently ignored as we'd expect the caret
@@ -100,10 +123,7 @@ impl Editor {
 
         self.draw_rows()?;
         let point = self.document.point_location();
-        Terminal::move_caret_to(Position {
-            x: point.x,
-            y: point.y,
-        })?;
+        Terminal::move_caret_to(point.subtract(self.scroll_offset))?;
         let _ = Terminal::show_caret();
         let _ = Terminal::execute();
         Ok(())
@@ -129,12 +149,12 @@ impl Editor {
     }
 
     fn draw_rows(&self) -> Result<(), Error> {
-        let size = Terminal::size().unwrap_or_default();
-        let terminal_view = TerminalView::from(size)?;
         if self.document.is_empty() {
-            Self::render_welcome_message_into(&terminal_view)?;
+            self.terminal_view.clear()?;
+            Self::render_welcome_message_into(&self.terminal_view)?;
         } else {
-            self.document.render_into(&terminal_view)?;
+            self.document
+                .render_into(&self.terminal_view, self.scroll_offset)?;
         }
         Ok(())
     }

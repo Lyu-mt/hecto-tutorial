@@ -51,11 +51,17 @@ impl Document {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
-    pub fn render_into<T: View>(&self, view: &T) -> Result<(), RenderingError> {
+    pub fn render_into<T: View>(
+        &self,
+        view: &T,
+        scroll_offset: Location,
+    ) -> Result<(), RenderingError> {
         let Size { height, .. } = view.size();
         for row in 0..height {
-            if let Some(line) = self.lines.get(row) {
-                line.render_into(view, Coordinate { x: 0, y: row })?;
+            if let Some(line) = self.lines.get(scroll_offset.y.saturating_add(row)) {
+                line.render_into(view, Coordinate { x: 0, y: row }, scroll_offset)?;
+            } else {
+                view.render_str("~", Coordinate { x: 0, y: row })?;
             }
         }
         Ok(())

@@ -1,6 +1,6 @@
 use core::cmp::min;
 
-use crate::editor::{View, Coordinate, RenderingError};
+use crate::editor::{Coordinate, Location, RenderingError, View};
 
 pub struct Line {
     string: String,
@@ -23,12 +23,16 @@ impl Line {
         }
         Self { string }
     }
-    pub fn render_into<T: View>(&self, view: &T, origin: Coordinate) -> Result<(), RenderingError> {
+    pub fn render_into<T: View>(
+        &self,
+        view: &T,
+        origin: Coordinate,
+        scroll_offset: Location,
+    ) -> Result<(), RenderingError> {
         let width = view.size().width.saturating_sub(origin.x);
-        let substring = self
-            .string
-            .get(0..min(width, self.string.len()))
-            .unwrap_or("");
+        let end = min(scroll_offset.x.saturating_add(width), self.string.len());
+        let start = scroll_offset.x.saturating_add(origin.x);
+        let substring = self.string.get(start..end).unwrap_or("");
         view.render_str(substring, origin)?;
         Ok(())
     }
